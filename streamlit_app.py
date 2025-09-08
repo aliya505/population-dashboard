@@ -13,6 +13,17 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded")
 
+st.title("🇺🇸 US Population Dashboard — Aliya J.")  # shows on the page
+st.caption("Built with Streamlit • Data source: U.S. Census Bureau")
+
+with st.expander("Notes & Data Sources"):
+    st.markdown("""
+    - **Source:** U.S. Census Bureau / World Bank.  
+    - **Customization:** Changed title, theme, added notes section.  
+    - **Instructions:** Use the sidebar to filter years and theme.
+    """)
+
+
 alt.themes.enable("dark")
 
 #######################
@@ -74,15 +85,22 @@ df_reshaped = pd.read_csv('data/us-population-2010-2019-reshaped.csv')
 # Sidebar
 with st.sidebar:
     st.title('🏂 US Population Dashboard')
-    
+
     year_list = list(df_reshaped.year.unique())[::-1]
-    
     selected_year = st.selectbox('Select a year', year_list)
+
     df_selected_year = df_reshaped[df_reshaped.year == selected_year]
     df_selected_year_sorted = df_selected_year.sort_values(by="population", ascending=False)
 
     color_theme_list = ['blues', 'cividis', 'greens', 'inferno', 'magma', 'plasma', 'reds', 'rainbow', 'turbo', 'viridis']
     selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
+
+    
+    top_n = st.slider("Top N states by population", 3, 20, 10, key="top_states_n")
+
+    top_df = df_selected_year_sorted.head(top_n).copy()
+
+
 
 
 #######################
@@ -250,23 +268,24 @@ with col[1]:
     
 
 with col[2]:
-    st.markdown('#### Top States')
+    st.markdown("#### Top States")
+    st.caption(f"Showing top **{top_n}** of **{len(df_selected_year_sorted)}** states")
 
-    st.dataframe(df_selected_year_sorted,
-                 column_order=("states", "population"),
-                 hide_index=True,
-                 width=None,
-                 column_config={
-                    "states": st.column_config.TextColumn(
-                        "States",
-                    ),
-                    "population": st.column_config.ProgressColumn(
-                        "Population",
-                        format="%f",
-                        min_value=0,
-                        max_value=max(df_selected_year_sorted.population),
-                     )}
-                 )
+    st.dataframe(
+        top_df,
+        column_order=("states", "population"),
+        hide_index=True,
+        column_config={
+            "states": st.column_config.TextColumn("States"),
+            "population": st.column_config.ProgressColumn(
+                "Population",
+                format="%,d",
+                min_value=0,
+                max_value=float(df_selected_year_sorted["population"].max()),
+            ),
+        },
+        use_container_width=True,
+    )
     
     with st.expander('About', expanded=True):
         st.write('''
